@@ -1,0 +1,229 @@
+---
+title: "Final Capstone DS+"
+author: "Sara"
+date: '2022-04-27'
+output: html_document
+---
+
+## R Markdown
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### server.R file for the Shiny app
+
+### It generates the required ngram data files used to predict ngrams.
+
+### These files are used by prediction functions found in server.R.
+
+
+#### Load the libraries required:
+
+```{r}
+suppressPackageStartupMessages({
+      library(tidytext)
+      library(tidyverse)
+      library(stringr)
+      library(knitr)
+      library(wordcloud)
+      library(ngram)
+})
+```
+
+
+## Load the Data
+
+```{r}
+en_US_blogs<- "C:/Users/200062/Downloads/Coursera-SwiftKey/final/en_US/en_US.blogs.txt"
+en_US_news <- "C:/Users/200062/Downloads/Coursera-SwiftKey/final/en_US/en_US.news.txt"
+en_US_twitter <- "C:/Users/200062/Downloads/Coursera-SwiftKey/final/en_US/en_US.twitter.txt"
+```
+
+## Read the Data
+
+```{r}
+blogs <- readLines(en_US_blogs, skipNul = TRUE)
+```
+
+
+```{r}
+con <- file(en_US_news, open="rb")
+news <- readLines(con,  skipNul = TRUE)
+twitter <- readLines(en_US_twitter, skipNul = TRUE)
+close(con)
+rm(con)
+```
+
+#### Create df for the Data sets
+
+```{r}
+blogs <- data_frame(text = blogs)
+news <- data_frame(text = news)
+twitter <- data_frame(text = twitter)
+```
+
+## Sampling the Data
+
+```{r}
+set.seed(42)
+sample_percentage <- 0.02
+
+sample_blogs <- blogs %>%
+      sample_n(., nrow(blogs)*sample_percentage)
+sample_news <- news %>%
+      sample_n(., nrow(news)*sample_percentage)
+sample_twitter <- twitter %>%
+      sample_n(., nrow(twitter)*sample_percentage)
+```
+
+## Create tidy Sample Data
+
+```{r}
+sampleData <- bind_rows(
+      mutate(sample_blogs, source = "blogs"),
+      mutate(sample_news,  source = "news"),
+      mutate(sample_twitter, source = "twitter")
+)
+sampleData$source <- as.factor(sampleData$source)
+```
+
+## Remove the un-neccessary data variables
+
+```{r}
+rm(list = c("sample_twitter", "sample_news", "sample_blogs", "sample_percentage",
+            "twitter", "news", "blogs", "en_US_twitter", "en_US_news", "en_US_blogs")
+)
+```
+
+## Clean the sampleData
+
+## Create filters for: non-alphanumeric's, url's, repeated letters(+3x)
+
+#### Data Cleaning:
+
+```{r}
+data("stop_words")
+```
+
+#### remove profanity
+
+#### <http://www.bannedwordlist.com/>
+
+```{r}
+swear_words <- read_delim("C:/Users/200062/Downloads/Coursera-SwiftKey/final/en_US/swearWords.csv", delim = "\n", col_names = FALSE)
+#swear_words <- read_delim("C:/Users/s.x.parimi/Coursera/Data-Science-Capstone-Milestone-Report/final/en_US/swearWords.csv", delim = "\n", col_names = FALSE)
+#swear_words <- read_delim("./final/en_US/swearWords.csv", delim = "\n", col_names = FALSE)
+swear_words <- unnest_tokens(swear_words, word, X1)
+
+replace_reg <- "[^[:alpha:][:space:]]*"
+replace_url <- "http[^[:space:]]*"
+replace_aaa <- "\\b(?=\\w*(\\w)\\1)\\w+\\b"
+```
+
+## Clean the sampleData. Cleaning is separted from tidying so `unnest_tokens` function can be used for words, and ngrams.
+
+```{r}
+clean_sampleData <-  sampleData %>%
+      mutate(text = str_replace_all(text, replace_reg, "")) %>%
+      mutate(text = str_replace_all(text, replace_url, "")) %>%
+      mutate(text = str_replace_all(text, replace_aaa, "")) %>%
+      mutate(text = iconv(text, "ASCII//TRANSLIT"))
+
+rm(list = c("sampleData"))
+```
+
+```{r}
+# Generate Ngrams
+# Unigrams
+unigramData <- clean_sampleData %>%
+      unnest_tokens(word, text) %>%
+      anti_join(swear_words) %>%
+      anti_join(stop_words)
+
+# Bigrams
+bigramData <- clean_sampleData %>%
+      unnest_tokens(bigram, text, token = "ngrams", n = 2)
+
+# Trigrams
+trigramData <- clean_sampleData %>%
+      unnest_tokens(trigram, text, token = "ngrams", n = 3)
+
+# Quadgrams
+quadgramData <- clean_sampleData %>%
+      unnest_tokens(quadgram, text, token = "ngrams", n = 4)
+
+# Quintgrams
+quintgramData <- clean_sampleData %>%
+      unnest_tokens(quintgram, text, token = "ngrams", n = 5)
+
+# Sextgrams
+sextgramData <- clean_sampleData %>%
+      unnest_tokens(sextgram, text, token = "ngrams", n = 6)
+
+                        # Reduce n-grams files
+# Bigrams
+bigram_tiny <- bigramData %>%
+      count(bigram) %>%
+      filter(n > 10) %>%
+      arrange(desc(n))
+rm(list = c("bigramData"))
+
+# Trigrams
+trigram_tiny <- trigramData %>%
+      count(trigram) %>%
+      filter(n > 10) %>%
+      arrange(desc(n))
+rm(list = c("trigramData"))
+
+# Quadgrams
+quadgram_tiny <- quadgramData %>%
+      count(quadgram) %>%
+      filter(n > 10) %>%
+      arrange(desc(n))
+rm(list = c("quadgramData"))
+
+# Quintgrams
+quintgram_tiny <- quintgramData %>%
+      count(quintgram) %>%
+      filter(n > 10) %>%
+      arrange(desc(n))
+rm(list = c("quintgramData"))
+
+# Sextgrams
+sextgram_tiny <- sextgramData %>%
+      count(sextgram) %>%
+      filter(n > 10) %>%
+      arrange(desc(n))
+rm(list = c("sextgramData"))
+
+                                    # Separate words
+# NgramWords
+bi_words <- bigram_tiny %>%
+      separate(bigram, c("word1", "word2"), sep = " ")
+
+tri_words <- trigram_tiny %>%
+      separate(trigram, c("word1", "word2", "word3"), sep = " ")
+
+quad_words <- quadgram_tiny %>%
+      separate(quadgram, c("word1", "word2", "word3", "word4"), sep = " ")
+
+quint_words <- quintgram_tiny %>%
+      separate(quintgram, c("word1", "word2", "word3", "word4", "word5"), sep = " ")
+
+sext_words <- sextgram_tiny %>%
+      separate(sextgram, c("word1", "word2", "word3", "word4", "word5", "word6"), sep = " ")
+```
+
+#### Save the data for the Next Word Predictor Shiny App
+
+```{r}
+dir.create("final_project_data", showWarnings = FALSE)
+
+saveRDS(bi_words, "C:/Users/200062/Downloads/Coursera-SwiftKey/final/bi_words_top.rds")
+saveRDS(tri_words, "C:/Users/200062/Downloads/Coursera-SwiftKey/final/tri_words_top.rds")
+saveRDS(quad_words,"C:/Users/200062/Downloads/Coursera-SwiftKey/final/quad_words_top.rds")
+saveRDS(quint_words,"C:/Users/200062/Downloads/Coursera-SwiftKey/final/quint_words_top.rds")
+saveRDS(sext_words,"C:/Users/200062/Downloads/Coursera-SwiftKey/final/sext_words_top.rds")
+```
+
+
