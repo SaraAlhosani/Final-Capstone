@@ -1,44 +1,50 @@
-## Capstone: Coursera Data Science
-## Final Project
+### Coursera's Data Science Capstone : Final Project
+### ui.R file for the Shiny app
+### It builds required UI for Next Word Predictor application which accepts an n-gram and predicts the next word.
 
-library(shiny)
-library(markdown)
-
-## SHINY UI
-shinyUI(
-  fluidPage(
-    titlePanel("FINAL PROJECT - DATA SCIENCE CAPSTONE - USING NLP TO PREDICT WORDS"),
-    sidebarLayout(
-      sidebarPanel(
-        helpText("ENTER A WORD, TEXT OR A SENTENCE TO PREVIEW NEXT WORD PREDICTION"),
-        hr(),
-        textInput("inputText", "ENTER THE TEXT / WORD / SENTENCE HERE",value = ""),
-        hr(),
-        helpText("1 - AFTER THE TEXT INPUT THE PREDICT NEXT WORD WILL BE DISPLAYED.", 
-                 hr(),
-                 "2 - YOU HAVE TO ENTER A PARTIALLY TEXT /SENTENCE TO SHOW THE NEXT WORD PREDICTION.",
-                 hr(),
-                 "3 - THE FORWARD WORD IS SHOWED AT THE PREDICT NEXT WORD TEXT BOX ON THE RIGHT SIDE"),
-        hr(),
-        hr()
-      ),
-      mainPanel(
-        h2("FOLLOW THE PREDICT NEXT WORD AT THIS BOX"),
-        verbatimTextOutput("prediction"),
-        strong("WORD / TEXT / SENTENCE ENTERED:"),
-        strong(code(textOutput('sentence1'))),
-        br(),
-        strong("USING SEARCH AT N-GRAMS TO SHOW NEXT WORD:"),
-        strong(code(textOutput('sentence2'))),
-        hr(),
-        hr(),
-        hr(),
-        img(src = 'swiftkey_logo.jpg', height = 101, width = 498),
-        hr(),
-        hr(),
-        img(src = 'coursera_logo.png', height = 122, width = 467),
-        hr()
-      )
-    )
-  )
+suppressWarnings(library(shiny))
+suppressWarnings(library(markdown))
+shinyUI(navbarPage("Data Science Capstone- Final Project",
+                   tabPanel("Next Word Predictor",
+                            HTML("<strong>Author: Sara Al Hosani</strong>"),
+                            br(),
+                            HTML("<strong>Date: 27 April 2022</strong>"),
+                            br(),
+                            img(src = "headers.png"),
+                            # Sidebar
+                            sidebarLayout(
+                              sidebarPanel(
+                                helpText("This application takes your string and predict the next word to your string"),
+                                textInput("inputString", "Enter your word or partial phrase here",value = ""),
+                                helpText("Once you finished typing your word or phrase, please click on the below button NextWord to suggest next expected word for your word or phrase"),
+                                submitButton('NextWord'),
+                                br(),
+                                br(),
+                                br(),
+                                br()
+                              ),
+                              mainPanel(
+                                h2("The suggested next word for your word or phrase is"),
+                                verbatimTextOutput("prediction"),
+                                strong("You entered the following word or phrase as Input to the application:"),
+                                tags$style(type='text/css', '#text1 {background-color: rgba(255,255,0,0.40); color: lightblue;}'), 
+                                textOutput('text1')
+                              )
+                            )
+                            
+                   ),
+                   tabPanel("Overview",
+                            mainPanel(
+                              img(src = "C:/Users/200062/OneDrive - Emirates Steel Industries/Desktop/predict the word APP/headers.png"),
+                              includeMarkdown("C:/Users/200062/OneDrive - Emirates Steel Industries/Desktop/predict the word APP/overview.md"),
+                              img(src = "C:/Users/200062/OneDrive - Emirates Steel Industries/Desktop/predict the word APP/app.PNG")
+                            )
+                   ),
+                   tabPanel("Instructions",
+                            mainPanel(
+                              img(src = "C:/Users/200062/OneDrive - Emirates Steel Industries/Desktop/predict the word APP/headers.png"),
+                              includeMarkdown("C:/Users/200062/OneDrive - Emirates Steel Industries/Desktop/predict the word APP/instructions.md")
+                            )
+                   )
+)
 )
